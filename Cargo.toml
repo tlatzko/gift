@@ -1,0 +1,7 @@
+[package]
+name = "gloria"
+version = "0.1.0"
+authors = ["Thomas Latzko <thomas.latzko@kit.edu>"]
+
+[dependencies.gifts]
+path = "src/gifts"

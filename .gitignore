@@ -1,0 +1,4 @@
+*.swp
+
+target/
+src/gifts/target/

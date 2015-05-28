@@ -1,0 +1,12 @@
+[package]
+name = "gifts"
+version = "0.1.0"
+authors = ["Thomas Latzko <thomas.latzko@kit.edu>"]
+
+[lib]
+name = "gifts"
+path = "lib.rs"
+
+[dependencies]
+rustc-serialize = "0.3.*"
+byteorder = "0.3.*"
