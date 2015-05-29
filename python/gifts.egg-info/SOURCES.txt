@@ -1,0 +1,7 @@
+setup.py
+python/gifts/__init__.py
+python/gifts/rmath.py
+python/gifts.egg-info/PKG-INFO
+python/gifts.egg-info/SOURCES.txt
+python/gifts.egg-info/dependency_links.txt
+python/gifts.egg-info/top_level.txt

@@ -1,5 +1,5 @@
 pub mod reader;
-
+pub mod cuboid;
 
 use std;
 use std::mem;

@@ -3,11 +3,13 @@ use std::io::Error as IoError;
 use std::error::Error;
 use std::fmt;
 use std::convert::From;
+use std::mem;
 use rustc_serialize::Decodable;
 use rustc_serialize::Decoder;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use byteorder::Error as ByteOrderError;
+
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum SizeLimit {
@@ -21,6 +23,29 @@ pub struct InvalidEncoding {
     desc: &'static str,
     detail: Option<String>,
 }
+
+
+
+
+/// Decoes an object directly from a `Buffer`ed Reader.
+///
+/// If the provided `SizeLimit` is reached, the decode will bail immediately.
+/// A SizeLimit can help prevent an attacker from flooding your server with
+/// a neverending stream of values that runs your server out of memory.
+///
+/// If this returns an `DecodingError`, assume that the buffer that you passed
+/// in is in an invalid state, as the error could be returned during any point
+/// in the reading.
+pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<T> {
+        Decodable::decode(&mut DecoderReader::new(r, size_limit))
+}
+
+pub fn decode_struct<R: Read, T: Decodable>(r: &mut R) -> DecodingResult<T> {
+    let mut r = r;
+    decode_from(&mut r, SizeLimit::Bounded(mem::size_of::<T>() as u64))
+}
+
+
 
 impl fmt::Display for InvalidEncoding {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -394,9 +419,5 @@ static UTF8_CHAR_WIDTH: [u8; 256] = [
 
 fn utf8_char_width(b: u8) -> usize {
     UTF8_CHAR_WIDTH[b as usize] as usize
-}
-
-pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<T> {
-        Decodable::decode(&mut DecoderReader::new(r, size_limit))
 }
 

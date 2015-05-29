@@ -1,4 +1,6 @@
 *.swp
-
+*.pyc
 target/
 src/gifts/target/
+build/
+*egg-info/

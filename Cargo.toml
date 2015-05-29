@@ -1,7 +1,17 @@
 [package]
-name = "gloria"
+name = "gifts"
 version = "0.1.0"
 authors = ["Thomas Latzko <thomas.latzko@kit.edu>"]
 
-[dependencies.gifts]
-path = "src/gifts"
+[lib]
+name = "gifts"
+crate_type = ["dylib", "rlib"]
+
+[[bin]]
+name = "cub_ex"
+path = "examples/cub_ex.rs"
+
+
+[dependencies]
+rustc-serialize = "0.3.*"
+byteorder = "0.3.*"
