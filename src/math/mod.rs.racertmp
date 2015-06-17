@@ -46,6 +46,7 @@ macro_rules! poly_val {
 #[test]
 fn test_polytope(){
     let arr = [1f64, 1f64, 1f64, 1f64];
+    arr.
     let res = polytope(&arr, 1f64);
     assert!(res == 4f64);
 }

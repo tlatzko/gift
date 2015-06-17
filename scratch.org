@@ -1,0 +1,303 @@
+#+TITLE: scratch
+#+DATE: <2015-06-17 Wed>
+#+AUTHOR: Thomas Latzko
+#+EMAIL: latzko@desk
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+OPTIONS: author:t c:nil creator:comment d:(not "LOGBOOK") date:t
+#+OPTIONS: e:t email:nil f:t inline:t num:t p:nil pri:nil stat:t
+#+OPTIONS: tags:t tasks:t tex:t timestamp:t toc:t todo:t |:t
+#+CREATOR: Emacs 24.5.1 (Org mode 8.2.10)
+#+DESCRIPTION:
+#+EXCLUDE_TAGS: noexport
+#+KEYWORDS:
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+
+* Scratch rust macros
+
+#+BEGIN_SRC rust
+  /// This is just a macro test
+  macro_rules! function{
+      (x -> $e:expr) => (println!("test function {}", $e));
+  }
+
+
+  macro_rules! add_arr {
+      (
+          $(
+              $x:expr; [ $( $y: expr ), *]
+                  );*
+              )=>{
+          &[ $($( $x + $y), *), *]
+      }
+  }
+
+
+  macro_rules! lambda_test{
+      ( $( $x:expr), *) => {
+          |y: f64| -> f64 {
+              let mut z: f64 = 0f64;
+              $(
+                  z = z + y * $x as f64;
+                      )*;
+             z
+          };
+        
+          };
+  }
+
+
+  macro_rules! poly_val {
+      (
+          $p0:expr, $( $p_rest:expr),* 
+        ) => {
+          
+          |x: f64| -> f64 {
+              
+              let mut val = $p0 as f64;
+              $(
+                  val = val * x + $p_rest as f64;
+                  
+                  )*;
+              val
+                  
+          };
+      };
+  }
+          
+
+
+  fn main(){
+      let x = 10;
+      println!("{}", x);
+      function!(x->"hello");
+      let t = add_arr!(2; [1, 2, 3]);
+
+      println!("{:?}", t);
+      let tf = lambda_test!(3, 2, 3);
+      println!("{}", tf(2.));
+
+      let po = poly_val!(0.3, 0.2, 0.4, 0.1);
+      println!("{}", po(2.));
+
+
+      
+  }
+
+#+END_SRC
+
+#+RESULTS:
+|   10 |          |       |
+| test | function | hello |
+|  [3, | 4,       | 5]    |
+|   16 |          |       |
+|  4.1 |          |       |
+
+
+
+* COMMENT pipeline functions with macros
+
+
+
+#+BEGIN_SRC rust
+  use std::sync::mpsc::sync_channel;
+  use std::marker::Send;
+  use std::thread;
+  use std::ops::{Add, Sub, Mul};
+
+
+
+  macro_rules! exptest{
+      ( $f1:expr,  [$( $fun:expr ),*] , $fend:expr ) => {
+          {
+
+              println!("start with {}", $f1);
+              $(
+                  println!("midlle {}", $fun);
+              )*
+              println!("ends with P{}", $fend);
+          }
+      };
+  }
+
+  fn sqr<T: Mul<Output=T> + Copy >(x: T) -> T {
+      let res = x * x;
+      return res;
+  }
+
+  fn double<T: Add<Output=T> + Copy> (x:T) -> T {
+      let res = x + x ;
+      return res;
+  }
+
+  fn triple<T: Add<Output=T> + Copy> (x:T) -> T {
+      let res = x + x + x;
+      return res;
+  }
+
+
+  macro_rules! channel_function {
+      ($chan:expr, $fun:expr) => {{
+          let (tx, rx) = sync_channel(2);
+          thread::spawn(move || {
+              loop {
+                  let data = match $chan.recv(){
+                      Err(why) =>
+                      {
+                          break;
+                      }
+                      Ok(data) => data
+                  };
+                  let mut res = $fun(data);
+                  tx.send(res).unwrap();
+              }
+          });
+          rx
+      }
+
+      };
+  }
+
+
+  /// Pipe contruct a parallel computation pipeline out
+  /// of regular functions
+
+  /**
+
+  macro_rules! pipe {
+      ($chan:expr; $fun:expr) => {
+          let (tx_$fun, rx) = sync_channel(2);
+          
+          thread::spawn(||)
+      };
+      
+      ($chan:expr; $( $fun:expr), * ) => {{}};
+
+      ($( $fun:expr), *) => {
+          let (tx, rx_$fun) = sync_channel(2);
+          
+          
+      };
+  }
+
+
+  ,*/
+  fn main(){
+      exptest!(1, [2, 3, 14, 21], 24);
+      let x = 10f64;
+      let y = sqr(x);
+      let z = double(y);
+      let t = triple(z);
+      println!("result is {}", t);
+
+      let (tx, rx) = sync_channel(2);
+      let ri = channel_function!(rx, sqr);
+      thread::spawn(move || {
+          for x in 0..10 {
+              tx.send(x).unwrap();
+          }
+      });
+
+      loop {
+          let data = match ri.recv() {
+              Err(why) => {
+                  println!("end loop {}", why);
+                  break;
+              },
+              Ok(data) => {
+                  println!("data {}", data);
+              }
+          };
+          
+      }
+      
+  }
+
+#+END_SRC
+
+#+RESULTS:
+| start  | with |         1 |    |   |        |         |
+| midlle |    2 |           |    |   |        |         |
+| midlle |    3 |           |    |   |        |         |
+| midlle |   14 |           |    |   |        |         |
+| midlle |   21 |           |    |   |        |         |
+| ends   | with |       P24 |    |   |        |         |
+| result |   is |       600 |    |   |        |         |
+| data   |    0 |           |    |   |        |         |
+| data   |    1 |           |    |   |        |         |
+| data   |    4 |           |    |   |        |         |
+| data   |    9 |           |    |   |        |         |
+| data   |   16 |           |    |   |        |         |
+| data   |   25 |           |    |   |        |         |
+| data   |   36 |           |    |   |        |         |
+| data   |   49 |           |    |   |        |         |
+| data   |   64 |           |    |   |        |         |
+| data   |   81 |           |    |   |        |         |
+| end    | loop | receiving | on | a | closed | channel |
+
+* Rust for Org Babel
+
+=ob-rust.el= has been adapted from =ob-C.el= and provides pretty much the same
+features.
+
+Basic functionality:
+
+#+BEGIN_SRC rust
+  fn main() {
+      println!("Hello world");
+  }
+#+END_SRC
+
+#+RESULTS:
+: Hello world
+
+Don't need to specify main if that's the only function we have:
+
+#+BEGIN_SRC rust
+  println!("Hello world");
+#+END_SRC
+
+#+RESULTS:
+: Hello world
+
+We can specify variables:
+
+#+BEGIN_SRC rust :var x="Hello world"
+  println!("{}", x);
+#+END_SRC
+
+#+RESULTS:
+: Hello world
+
+
+We support =int=s, =f64=, strings and lists of any of those:
+
+#+HEADER: :var n=42
+#+HEADER: :var pi=3.14
+#+HEADER: :var s="Hello"
+#+HEADER: :var l='(1 2 3 4)
+#+BEGIN_SRC rust
+  println!("n = {}, pi = {}, s = {}, l = {}", n, pi, s, l);
+#+END_SRC
+
+#+RESULTS:
+
+We can also use modules, extern crates and set attributes:
+
+#+HEADER: :uses std::mem::size_of
+#+HEADER: :externs getopts
+#+HEADER: :attributes feature(globs)
+#+BEGIN_SRC rust
+  println!("{}", size_of::<String>());
+#+END_SRC
+
+#+RESULTS:
+
+#+HEADER: :uses '(std::mem::size_of std::mem::transmute)
+#+BEGIN_SRC rust 
+  println!("Hello world");
+#+END_SRC
+
+#+RESULTS:
+: Hello world
+

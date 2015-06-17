@@ -1,0 +1,95 @@
+use std::sync::mpsc::sync_channel;
+use std::marker::Send;
+use std::thread;
+use std::ops::{Add, Sub, Mul};
+
+
+
+macro_rules! exptest{
+    ( $f1:expr,  [$( $fun:expr ),*] , $fend:expr ) => {
+        {
+
+            println!("start with {}", $f1);
+            $(
+                println!("midlle {}", $fun);
+            )*
+            println!("ends with P{}", $fend);
+        }
+    };
+}
+
+fn sqr<T: Mul<Output=T> + Copy >(x: T) -> T {
+    let res = x * x;
+    return res;
+}
+
+fn double<T: Add<Output=T> + Copy> (x:T) -> T {
+    let res = x + x ;
+    return res;
+}
+
+fn triple<T: Add<Output=T> + Copy> (x:T) -> T {
+    let res = x + x + x;
+    return res;
+}
+
+
+macro_rules! channel_function {
+    ($chan:expr, $fun:expr) => {{
+        let (tx, rx) = sync_channel(2);
+        thread::spawn(move || {
+            loop {
+                let data = match chan.recv(){
+                    Err(why) =>
+                    {
+                        break;
+                    }
+                    Ok(data) => data
+                }
+                let mut res = $fun(data);
+                tx.send(res).unwrap();
+            }
+        });
+        rx
+    }
+
+    };
+}
+
+
+/// Pipe contruct a parallel computation pipeline out
+/// of regular functions
+
+/**
+
+macro_rules! pipe {
+    ($chan:expr; $fun:expr) => {
+        let (tx_$fun, rx) = sync_channel(2);
+        
+        thread::spawn(||)
+    };
+    
+    ($chan:expr; $( $fun:expr), * ) => {{}};
+
+    ($( $fun:expr), *) => {
+        let (tx, rx_$fun) = sync_channel(2);
+        
+        
+    };
+}
+
+
+*/
+fn main(){
+    exptest!(1, [2, 3, 14, 21], 24);
+    let x = 10f64;
+    let y = sqr(x);
+    let z = double(y);
+    let t = triple(z);
+    println!("result is {}", t);
+
+    let (tx, rx) = sync_channel(2);
+    let ri = channel_function!(rx, sqr);
+    thread::spaw
+    
+}
